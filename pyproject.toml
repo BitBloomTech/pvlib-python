@@ -18,7 +18,6 @@ dependencies = [
     'scipy >= 1.6.0',
     'tables',
 ]
-license = "BSD-3-Clause"
 classifiers = [
     'Development Status :: 4 - Beta',
     'Operating System :: OS Independent',
