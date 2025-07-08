@@ -22,7 +22,7 @@ stages:
               onlyAddExtraIndex: True
           - script: |
               source $(Build.SourcesDirectory)/.venv/bin/activate
-              pip install .[test]
+              pip install .[test,build]
             displayName: "Installing pvlib"
           - script: |
               source $(Build.SourcesDirectory)/.venv/bin/activate
