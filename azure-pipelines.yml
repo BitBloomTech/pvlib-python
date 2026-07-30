@@ -41,7 +41,8 @@ stages:
               TAG="${TAG#v}"
               export SETUPTOOLS_SCM_PRETEND_VERSION="$TAG"
               echo "Using package version: $SETUPTOOLS_SCM_PRETEND_VERSION"
-              python setup.py sdist
+              python -m pip install build
+              python -m build --sdist --outdir dist
               python -m twine upload -r "bitbloom-artifacts" --config-file $(PYPIRC_PATH) dist/*.tar.gz
             displayName: "Building and publishing sdist package"
             condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
