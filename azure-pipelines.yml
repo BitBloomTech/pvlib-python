@@ -10,9 +10,9 @@ pool:
 stages:
   - stage: Build
     jobs:
-      - job: Python310Build
+      - job: Python314Build
         timeoutInMinutes: 120
-        container: python:3.10.11
+        container: python:3.14
         steps:
           - checkout: self
             fetchDepth: 0
