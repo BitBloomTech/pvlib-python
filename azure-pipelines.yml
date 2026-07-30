@@ -37,6 +37,10 @@ stages:
             condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
           - script: |
               source $(Build.SourcesDirectory)/.venv/bin/activate
+              TAG="${BUILD_SOURCEBRANCH#refs/tags/}"
+              TAG="${TAG#v}"
+              export SETUPTOOLS_SCM_PRETEND_VERSION="$TAG"
+              echo "Using package version: $SETUPTOOLS_SCM_PRETEND_VERSION"
               python setup.py sdist
               python -m twine upload -r "bitbloom-artifacts" --config-file $(PYPIRC_PATH) dist/*.tar.gz
             displayName: "Building and publishing sdist package"
