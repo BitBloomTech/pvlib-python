@@ -19,6 +19,13 @@ def test_read_tmy3():
     tmy.read_tmy3(TMY3_TESTFILE, map_variables=False)
 
 
+def test_read_tmy3_buffer():
+    with open(TMY3_TESTFILE) as f:
+        data, _ = tmy.read_tmy3(f, map_variables=False)
+        assert 'GHI source' in data.columns
+        assert len(data) == 8760
+
+
 def test_read_tmy3_norecolumn():
     data, _ = tmy.read_tmy3(TMY3_TESTFILE, map_variables=False)
     assert 'GHI source' in data.columns
@@ -86,7 +93,7 @@ def test_gh865_read_tmy3_feb_leapyear_hr24():
     assert all(data.index[:-1].year == 1990)
     assert data.index[-1].year == 1991
     # let's do a quick sanity check, are the indices monotonically increasing?
-    assert all(np.diff(data.index.view(np.int64)) == 3600000000000)
+    assert all(np.diff(data.index) == pd.Timedelta(hours=1))
     # according to the TMY3 manual, each record corresponds to the previous
     # hour so check that the 1st hour is 1AM and the last hour is midnite
     assert data.index[0].hour == 1

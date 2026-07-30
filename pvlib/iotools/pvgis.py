@@ -20,7 +20,7 @@ from pathlib import Path
 import requests
 import numpy as np
 import pandas as pd
-import pytz
+import zoneinfo
 from pvlib.iotools import read_epw
 
 URL = 'https://re.jrc.ec.europa.eu/api/'
@@ -202,7 +202,7 @@ def get_pvgis_hourly(latitude, longitude, start=None, end=None,
     .. [2] `PVGIS Hourly Radiation
        <https://ec.europa.eu/jrc/en/PVGIS/tools/hourly-radiation>`_
     .. [3] `PVGIS Non-interactive service
-       <https://ec.europa.eu/jrc/en/PVGIS/docs/noninteractive>`_
+       <https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en>`_
     .. [4] `PVGIS horizon profile tool
        <https://ec.europa.eu/jrc/en/PVGIS/tools/horizon>`_
     """  # noqa: E501
@@ -413,10 +413,10 @@ def _coerce_and_roll_tmy(tmy_data, tz, year):
     re-interpreted as zero / UTC.
     """
     if tz:
-        tzname = pytz.timezone(f'Etc/GMT{-tz:+d}')
+        tzname = zoneinfo.ZoneInfo(f'Etc/GMT{-tz:+d}')  # noqa: E231
     else:
         tz = 0
-        tzname = pytz.timezone('UTC')
+        tzname = zoneinfo.ZoneInfo('UTC')
     new_index = pd.DatetimeIndex([
         timestamp.replace(year=year, tzinfo=tzname)
         for timestamp in tmy_data.index],

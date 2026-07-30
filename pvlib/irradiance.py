@@ -16,7 +16,7 @@ from scipy.optimize import bisect
 from pvlib import atmosphere, solarposition, tools
 import pvlib  # used to avoid dni name collision in complete_irradiance
 
-from pvlib._deprecation import pvlibDeprecationWarning, renamed_kwarg_warning
+from pvlib._deprecation import pvlibDeprecationWarning, deprecated
 import warnings
 
 
@@ -63,10 +63,11 @@ def get_extra_radiation(datetime_or_doy, solar_constant=1366.1,
     Returns
     -------
     dni_extra : float, array, or Series
-        The extraterrestrial radiation present in watts per square meter
-        on a surface which is normal to the sun. Pandas Timestamp and
-        DatetimeIndex inputs will yield a Pandas TimeSeries. All other
-        inputs will yield a float or an array of floats.
+        The extraterrestrial radiation normal to the sun.
+        Pandas Timestamp and DatetimeIndex inputs for ``datetime_or_doy``
+        will return ``dni_extra`` as a Pandas TimeSeries. All other input
+        data types will yield ``dni_extra`` as a float or an array of floats.
+        See :term:`dni_extra`. [Wm⁻²]
 
     References
     ----------
@@ -88,7 +89,7 @@ def get_extra_radiation(datetime_or_doy, solar_constant=1366.1,
        Engineers, 2005. :doi:`10.1061/9780784408056`
 
     .. [6] I. Reda, A. Andreas, "Solar position algorithm for solar
-       radiation applications" NREL Golden, USA. NREL/TP-560-34302,
+       radiation applications" NREL Golden, CO, USA. NREL/TP-560-34302,
        Revised 2008. :doi:`10.2172/15003974`
     """
 
@@ -131,7 +132,9 @@ def _handle_extra_radiation_types(datetime_or_doy, epoch_year):
     # a better way to do it.
     if isinstance(datetime_or_doy, pd.DatetimeIndex):
         to_doy = tools._pandas_to_doy  # won't be evaluated unless necessary
-        def to_datetimeindex(x): return x                       # noqa: E306
+
+        def to_datetimeindex(x):
+            return x                       # noqa: E306
         to_output = partial(pd.Series, index=datetime_or_doy)
     elif isinstance(datetime_or_doy, pd.Timestamp):
         to_doy = tools._pandas_to_doy
@@ -145,12 +148,14 @@ def _handle_extra_radiation_types(datetime_or_doy, epoch_year):
             tools._datetimelike_scalar_to_datetimeindex
         to_output = tools._scalar_out
     elif np.isscalar(datetime_or_doy):  # ints and floats of various types
-        def to_doy(x): return x                                 # noqa: E306
+        def to_doy(x):
+            return x                                 # noqa: E306
         to_datetimeindex = partial(tools._doy_to_datetimeindex,
                                    epoch_year=epoch_year)
         to_output = tools._scalar_out
     else:  # assume that we have an array-like object of doy
-        def to_doy(x): return x                                 # noqa: E306
+        def to_doy(x):
+            return x                                 # noqa: E306
         to_datetimeindex = partial(tools._doy_to_datetimeindex,
                                    epoch_year=epoch_year)
         to_output = tools._array_out
@@ -171,18 +176,22 @@ def aoi_projection(surface_tilt, surface_azimuth, solar_zenith, solar_azimuth):
     Parameters
     ----------
     surface_tilt : numeric
-        Panel tilt from horizontal.
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
+
     surface_azimuth : numeric
-        Panel azimuth from north.
+        Panel azimuth. See :term:`surface_azimuth`. [°]
+
     solar_zenith : numeric
-        Solar zenith angle.
+        Solar zenith angle. See :term:`solar_zenith`. [°]
+
     solar_azimuth : numeric
-        Solar azimuth angle.
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
 
     Returns
     -------
     projection : numeric
         Dot product of panel normal and solar angle.
+        See :term:`aoi_projection`.
     """
 
     projection = (
@@ -211,18 +220,18 @@ def aoi(surface_tilt, surface_azimuth, solar_zenith, solar_azimuth):
     Parameters
     ----------
     surface_tilt : numeric
-        Panel tilt from horizontal.
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
     surface_azimuth : numeric
-        Panel azimuth from north.
+        Panel azimuth. See :term:`surface_azimuth`. [°]
     solar_zenith : numeric
-        Solar zenith angle.
+        Solar zenith angle. See :term:`solar_zenith`. [°]
     solar_azimuth : numeric
-        Solar azimuth angle.
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
 
     Returns
     -------
     aoi : numeric
-        Angle of incidence in degrees.
+        Angle of incidence, see :term:`aoi`. [°]
     """
 
     projection = aoi_projection(surface_tilt, surface_azimuth,
@@ -245,20 +254,20 @@ def beam_component(surface_tilt, surface_azimuth, solar_zenith, solar_azimuth,
     Parameters
     ----------
     surface_tilt : numeric
-        Panel tilt from horizontal.
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
     surface_azimuth : numeric
-        Panel azimuth from north.
+        Panel azimuth. See :term:`surface_azimuth`. [°]
     solar_zenith : numeric
-        Solar zenith angle.
+        Solar zenith angle. See :term:`solar_zenith`. [°]
     solar_azimuth : numeric
-        Solar azimuth angle.
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
     dni : numeric
         Direct normal irradiance, see :term:`dni`. [Wm⁻²]
 
     Returns
     -------
     beam : numeric
-        Beam component
+        Beam component. [Wm⁻²]
     """
     beam = dni * aoi_projection(surface_tilt, surface_azimuth,
                                 solar_zenith, solar_azimuth)
@@ -293,25 +302,27 @@ def get_total_irradiance(surface_tilt, surface_azimuth,
     Parameters
     ----------
     surface_tilt : numeric
-        Panel tilt from horizontal. [degree]
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
     surface_azimuth : numeric
-        Panel azimuth from north. [degree]
+        Panel azimuth. See :term:`surface_azimuth`. [°]
     solar_zenith : numeric
-        Solar zenith angle. [degree]
+        Solar zenith angle. See :term:`solar_zenith`. [°]
     solar_azimuth : numeric
-        Solar azimuth angle. [degree]
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
     dni : numeric
-        Direct Normal Irradiance. [W/m2]
+        Direct normal irradiance. See :term:`dni`. [Wm⁻²]
     ghi : numeric
-        Global horizontal irradiance. [W/m2]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
     dhi : numeric
-        Diffuse horizontal irradiance. [W/m2]
+        Diffuse horizontal irradiance. See :term:`dhi`. [Wm⁻²]
     dni_extra : numeric, optional
-        Extraterrestrial direct normal irradiance. [W/m2]
+        Extraterrestrial direct normal irradiance. See :term:`dni_extra`.
+        [Wm⁻²]
     airmass : numeric, optional
-        Relative airmass (not adjusted for pressure). [unitless]
+        Relative airmass, not adjusted for pressure.
+        See :term:`airmass_relative`. [unitless]
     albedo : numeric, default 0.25
-        Ground surface albedo. [unitless]
+        Ground surface albedo. See :term:`albedo`. [unitless]
     surface_type : str, optional
         Surface type. See :py:func:`~pvlib.irradiance.get_ground_diffuse` for
         the list of accepted values.
@@ -326,7 +337,7 @@ def get_total_irradiance(surface_tilt, surface_azimuth,
     -------
     total_irrad : OrderedDict or DataFrame
         Contains keys/columns ``'poa_global', 'poa_direct', 'poa_diffuse',
-        'poa_sky_diffuse', 'poa_ground_diffuse'``.
+        'poa_sky_diffuse', 'poa_ground_diffuse'``. [Wm⁻²]
 
     Notes
     -----
@@ -372,23 +383,25 @@ def get_sky_diffuse(surface_tilt, surface_azimuth,
     Parameters
     ----------
     surface_tilt : numeric
-        Panel tilt from horizontal. [degree]
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
     surface_azimuth : numeric
-        Panel azimuth from north. [degree]
+        Panel azimuth. See :term:`surface_azimuth`. [°]
     solar_zenith : numeric
-        Solar zenith angle. [degree]
+        Solar zenith angle. See :term:`solar_zenith`. [°]
     solar_azimuth : numeric
-        Solar azimuth angle. [degree]
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
     dni : numeric
-        Direct Normal Irradiance. [W/m2]
+        Direct normal irradiance. See :term:`dni`. [Wm⁻²]
     ghi : numeric
-        Global horizontal irradiance. [W/m2]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
     dhi : numeric
-        Diffuse horizontal irradiance. [W/m2]
+        Diffuse horizontal irradiance. See :term:`dhi`. [Wm⁻²]
     dni_extra : numeric, optional
-        Extraterrestrial direct normal irradiance. [W/m2]
+        Extraterrestrial direct normal irradiance. See :term:`dni_extra`.
+        [Wm⁻²]
     airmass : numeric, optional
-        Relative airmass (not adjusted for pressure). [unitless]
+        Relative airmass, not adjusted for pressure.
+        See :term:`airmass_relative`. [unitless]
     model : str, default 'isotropic'
         Irradiance model. Can be one of ``'isotropic'``, ``'klucher'``,
         ``'haydavies'``, ``'reindl'``, ``'king'``, ``'perez'``,
@@ -399,7 +412,7 @@ def get_sky_diffuse(surface_tilt, surface_azimuth,
     Returns
     -------
     poa_sky_diffuse : numeric
-        Sky diffuse irradiance in the plane of array. [W/m2]
+        Sky diffuse irradiance in the plane of array. [Wm⁻²]
 
     Raises
     ------
@@ -469,36 +482,36 @@ def poa_components(aoi, dni, poa_sky_diffuse, poa_ground_diffuse):
     ----------
     aoi : numeric
         Angle of incidence of solar rays with respect to the module
-        surface, from :func:`aoi`.
+        surface. See :term:`aoi`. [°]
 
     dni : numeric
-        Direct normal irradiance (Wm⁻²), as measured from a TMY file or
-        calculated with a clearsky model.
+        Direct normal irradiance, as measured from a TMY file or
+        calculated with a clearsky model. See :term:`dni`. [Wm⁻²]
 
     poa_sky_diffuse : numeric
-        Diffuse irradiance (Wm⁻²) in the plane of the modules, as
-        calculated by a diffuse irradiance translation function
+        Diffuse irradiance in the plane of the modules, as
+        calculated by a diffuse irradiance translation function. [Wm⁻²]
 
     poa_ground_diffuse : numeric
-        Ground reflected irradiance (Wm⁻²) in the plane of the modules,
-        as calculated by an albedo model (eg. :func:`grounddiffuse`)
+        Ground-reflected irradiance in the plane of the modules,
+        as calculated by an albedo model (eg.,
+        :py:func:`~pvlib.irradiance.get_ground_diffuse`). [Wm⁻²]
 
     Returns
     -------
     irrads : OrderedDict or DataFrame
         Contains the following keys:
 
-        * ``poa_global`` : Total in-plane irradiance (Wm⁻²)
-        * ``poa_direct`` : Total in-plane beam irradiance (Wm⁻²)
-        * ``poa_diffuse`` : Total in-plane diffuse irradiance (Wm⁻²)
-        * ``poa_sky_diffuse`` : In-plane diffuse irradiance from sky (Wm⁻²)
-        * ``poa_ground_diffuse`` : In-plane diffuse irradiance from ground
-          (Wm⁻²)
+        * ``poa_global`` : Total in-plane irradiance. [Wm⁻²]
+        * ``poa_direct`` : Total in-plane beam irradiance. [Wm⁻²]
+        * ``poa_diffuse`` : Total in-plane diffuse irradiance. [Wm⁻²]
+        * ``poa_sky_diffuse`` : In-plane diffuse irradiance from sky. [Wm⁻²]
+        * ``poa_ground_diffuse`` : In-plane diffuse irradiance from ground.
+          [Wm⁻²]
 
     Notes
     ------
-    Negative beam irradiation due to aoi :math:`> 90^{\circ}` or AOI
-    :math:`< 0^{\circ}` is set to zero.
+    Negative beam irradiation due to AOI > 90° or AOI < 0° is set to zero.
     '''
 
     poa_direct = np.maximum(dni * np.cos(np.radians(aoi)), 0)
@@ -533,18 +546,17 @@ def get_ground_diffuse(surface_tilt, ghi, albedo=.25, surface_type=None):
     Parameters
     ----------
     surface_tilt : numeric
-        Surface tilt angles in decimal degrees. Tilt must be >=0 and
-        <=180. The tilt angle is defined as degrees from horizontal
-        (e.g. surface facing up = 0, surface facing horizon = 90).
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
 
     ghi : numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     albedo : numeric, default 0.25
-        Ground reflectance, typically 0.1-0.4 for surfaces on Earth
-        (land), may increase over snow, ice, etc. May also be known as
+        Ground surface albedo., typically 0.1-0.4 for bare or vegetated ground,
+        may increase over snow, ice, etc. May also be known as
         the reflection coefficient. Must be >=0 and <=1. Will be
-        overridden if ``surface_type`` is supplied.
+        overridden if ``surface_type`` is supplied. See :term:`albedo`.
+        [unitless]
 
     surface_type : string, optional
         If supplied, overrides ``albedo``. ``surface_type`` can be one of
@@ -554,8 +566,8 @@ def get_ground_diffuse(surface_tilt, ghi, albedo=.25, surface_type=None):
 
     Returns
     -------
-    grounddiffuse : numeric
-        Ground reflected irradiance. [Wm⁻²]
+    poa_ground_diffuse : numeric
+        The ground diffuse component of irradiance on a tilted plane. [Wm⁻²]
 
     Notes
     -----
@@ -577,14 +589,17 @@ def get_ground_diffuse(surface_tilt, ghi, albedo=.25, surface_type=None):
     if surface_type is not None:
         albedo = pvlib.albedo.SURFACE_ALBEDOS[surface_type]
 
-    diffuse_irrad = ghi * albedo * (1 - np.cos(np.radians(surface_tilt))) * 0.5
+    poa_ground_diffuse = (
+        ghi * albedo *
+        (1 - np.cos(np.radians(surface_tilt))) * 0.5
+    )
 
     try:
-        diffuse_irrad.name = 'diffuse_ground'
+        poa_ground_diffuse.name = 'poa_ground_diffuse'
     except AttributeError:
         pass
 
-    return diffuse_irrad
+    return poa_ground_diffuse
 
 
 def isotropic(surface_tilt, dhi):
@@ -606,17 +621,15 @@ def isotropic(surface_tilt, dhi):
     Parameters
     ----------
     surface_tilt : numeric
-        Surface tilt angle in decimal degrees. Tilt must be >=0 and
-        <=180. The tilt angle is defined as degrees from horizontal
-        (e.g. surface facing up = 0, surface facing horizon = 90)
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
 
     dhi : numeric
-        Diffuse horizontal irradiance. [Wm⁻²] DHI must be >=0.
+        Diffuse horizontal irradiance, must be >=0. See :term:`dhi`.
 
     Returns
     -------
     diffuse : numeric
-        The sky diffuse component of the solar radiation.
+        The sky diffuse component of the solar radiation. [Wm⁻²]
 
     References
     ----------
@@ -644,34 +657,27 @@ def klucher(surface_tilt, surface_azimuth, dhi, ghi, solar_zenith,
     Parameters
     ----------
     surface_tilt : numeric
-        Surface tilt angles in decimal degrees. ``surface_tilt`` must be >=0
-        and <=180. The tilt angle is defined as degrees from horizontal
-        (e.g. surface facing up = 0, surface facing horizon = 90)
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
 
     surface_azimuth : numeric
-        Surface azimuth angles in decimal degrees. ``surface_azimuth`` must
-        be >=0 and <=360. The Azimuth convention is defined as degrees
-        east of north (e.g. North = 0, South=180 East = 90, West = 270).
+        Panel azimuth. See :term:`surface_azimuth`. [°]
 
     dhi : numeric
-        Diffuse horizontal irradiance, must be >=0. [Wm⁻²]
+        Diffuse horizontal irradiance, must be >=0. See :term:`dhi`. [Wm⁻²]
 
     ghi : numeric
-        Global horizontal irradiance, must be >=0. [Wm⁻²]
+        Global horizontal irradiance, must be >=0. See :term:`ghi`. [Wm⁻²]
 
     solar_zenith : numeric
-        Apparent (refraction-corrected) zenith angles in decimal
-        degrees. ``solar_zenith`` must be >=0 and <=180.
+        Apparent (refraction-corrected) zenith angles. [°]
 
     solar_azimuth : numeric
-        Sun azimuth angles in decimal degrees. ``solar_azimuth`` must be >=0
-        and <=360. The Azimuth convention is defined as degrees east of
-        north (e.g. North = 0, East = 90, West = 270).
+        Sun azimuth angles. See :term:`solar_azimuth`. [°]
 
     Returns
     -------
-    diffuse : numeric
-        The sky diffuse component of the solar radiation. [Wm⁻²]
+    poa_sky_diffuse : numeric
+        The sky diffuse component of irradiance on a tilted plane. [Wm⁻²]
 
     Notes
     -----
@@ -696,7 +702,7 @@ def klucher(surface_tilt, surface_azimuth, dhi, ghi, solar_zenith,
 
        F' = 1 - (DHI / GHI)^2,
 
-    where GHI is the global horiztonal irradiance.
+    where GHI is the global horizontal irradiance.
 
     References
     ----------
@@ -728,9 +734,9 @@ def klucher(surface_tilt, surface_azimuth, dhi, ghi, solar_zenith,
     term2 = 1 + F * (tools.sind(0.5 * surface_tilt) ** 3)
     term3 = 1 + F * (cos_tt ** 2) * (tools.sind(solar_zenith) ** 3)
 
-    sky_diffuse = dhi * term1 * term2 * term3
+    poa_sky_diffuse = dhi * term1 * term2 * term3
 
-    return sky_diffuse
+    return poa_sky_diffuse
 
 
 def haydavies(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
@@ -749,32 +755,29 @@ def haydavies(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
     Parameters
     ----------
     surface_tilt : numeric
-        Panel tilt from the horizontal, in decimal degrees, see
-        :term:`surface_tilt`.
+        Panel tilt from the horizontal. See :term:`surface_tilt`. [°]
 
     surface_azimuth : numeric
-        Surface azimuth angles in decimal degrees. The azimuth
-        convention is defined as degrees east of north (e.g. North=0,
-        South=180, East=90, West=270).
+        Panel azimuth. See :term:`surface_azimuth`. [°]
 
     dhi : numeric
-        Diffuse horizontal irradiance. [Wm⁻²]
+        Diffuse horizontal irradiance, see :term:`dhi`. [Wm⁻²]
 
     dni : numeric
         Direct normal irradiance, see :term:`dni`. [Wm⁻²]
 
     dni_extra : numeric
-        Extraterrestrial normal irradiance. [Wm⁻²]
+        Extraterrestrial normal irradiance, see :term:`dni_extra`. [Wm⁻²]
 
     solar_zenith : numeric, optional
-        Solar apparent (refraction-corrected) zenith angles in decimal
-        degrees. Must supply ``solar_zenith`` and ``solar_azimuth`` or
-        supply ``projection_ratio``.
+        Solar apparent (refraction-corrected) zenith angles. Must supply
+        ``solar_zenith`` and ``solar_azimuth``, or supply
+        ``projection_ratio``. [°]
 
     solar_azimuth : numeric, optional
-        Solar azimuth angles in decimal degrees. Must supply
-        ``solar_zenith`` and ``solar_azimuth`` or supply
-        ``projection_ratio``.
+        Solar azimuth angles. Must supply ``solar_zenith`` and
+        ``solar_azimuth``, or supply ``projection_ratio``. See
+        :term:`solar_azimuth`. [°]
 
     projection_ratio : numeric, optional
         Ratio of angle of incidence projection to solar zenith angle
@@ -782,26 +785,28 @@ def haydavies(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
         or supply ``projection_ratio``.
 
     return_components : bool, default `False`
-        If `False`, ``sky_diffuse`` is returned.
+        If `False`, ``poa_sky_diffuse`` is returned.
         If `True`, ``diffuse_components`` is returned.
 
     Returns
     --------
-    numeric, OrderedDict, or DataFrame
+    numeric, dict, or DataFrame
         Return type controlled by ``return_components`` argument.
-        If `False`, ``sky_diffuse`` is returned.
+        If `False`, ``poa_sky_diffuse`` is returned.
         If `True`, ``diffuse_components`` is returned.
 
-    sky_diffuse : numeric
-        The sky diffuse component of the solar radiation on a tilted
-        surface.
+    poa_sky_diffuse : numeric
+        The sky diffuse component of irradiance on a tilted plane. [Wm⁻²]
 
-    diffuse_components : OrderedDict (array input) or DataFrame (Series input)
+    diffuse_components : dict (array input) or DataFrame (Series input)
         Keys/columns are:
-            * sky_diffuse: Total sky diffuse
-            * isotropic
-            * circumsolar
-            * horizon
+            * poa_sky_diffuse: The sky diffuse component of irradiance on a
+              tilted plane. [Wm⁻²]
+            * poa_isotropic: The portion of sky diffuse irradiance on a tilted
+              plane from the isotropic sky dome. [Wm⁻²]
+            * poa_circumsolar: The portion of sky diffuse irradiance on a
+              tilted plane from the circumsolar region. [Wm⁻²]
+
 
     Notes
     ------
@@ -856,27 +861,24 @@ def haydavies(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
 
     poa_isotropic = np.maximum(dhi * term1 * term2, 0)
     poa_circumsolar = np.maximum(dhi * (AI * Rb), 0)
-    sky_diffuse = poa_isotropic + poa_circumsolar
+    poa_sky_diffuse = poa_isotropic + poa_circumsolar
 
     if return_components:
-        diffuse_components = OrderedDict()
-        diffuse_components['sky_diffuse'] = sky_diffuse
+        diffuse_components = {
+            'poa_sky_diffuse': poa_sky_diffuse,
+            'poa_isotropic': poa_isotropic,
+            'poa_circumsolar': poa_circumsolar
+        }
 
-        # Calculate the individual components
-        diffuse_components['isotropic'] = poa_isotropic
-        diffuse_components['circumsolar'] = poa_circumsolar
-        diffuse_components['horizon'] = np.where(
-            np.isnan(diffuse_components['isotropic']), np.nan, 0.)
-
-        if isinstance(sky_diffuse, pd.Series):
+        if isinstance(poa_sky_diffuse, pd.Series):
             diffuse_components = pd.DataFrame(diffuse_components)
         return diffuse_components
     else:
-        return sky_diffuse
+        return poa_sky_diffuse
 
 
 def reindl(surface_tilt, surface_azimuth, dhi, dni, ghi, dni_extra,
-           solar_zenith, solar_azimuth):
+           solar_zenith, solar_azimuth, return_components=False):
     r'''
     Determine the diffuse irradiance from the sky on a tilted surface using
     the Reindl (1990) model.
@@ -891,39 +893,54 @@ def reindl(surface_tilt, surface_azimuth, dhi, dni, ghi, dni_extra,
     Parameters
     ----------
     surface_tilt : numeric
-        Surface tilt angles in decimal degrees. The tilt angle is
-        defined as degrees from horizontal (e.g. surface facing up = 0,
-        surface facing horizon = 90)
+        Panel tilt from the horizontal. See :term:`surface_tilt`. [°]
 
     surface_azimuth : numeric
-        Surface azimuth angles in decimal degrees. The azimuth
-        convention is defined as degrees east of north (e.g. North = 0,
-        South=180 East = 90, West = 270).
+        Panel azimuth. See :term:`surface_azimuth`. [°]
 
     dhi : numeric
-        diffuse horizontal irradiance. [Wm⁻²]
+        Diffuse horizontal irradiance, see :term:`dhi`. [Wm⁻²]
 
     dni : numeric
-        direct normal irradiance. [Wm⁻²]
+        Direct normal irradiance, see :term:`dni`. [Wm⁻²]
 
-    ghi: numeric
-        Global horizontal irradiance. [Wm⁻²]
+    ghi : numeric
+        Global horizontal irradiance, see :term:`ghi`. [Wm⁻²]
 
     dni_extra : numeric
-        Extraterrestrial normal irradiance. [Wm⁻²]
+        Extraterrestrial normal irradiance, see :term:`dni_extra`. [Wm⁻²]
 
     solar_zenith : numeric
-        Apparent (refraction-corrected) zenith angles in decimal degrees.
+        Solar apparent (refraction-corrected) zenith angles
+        See :term:`solar_zenith`. [°]
 
     solar_azimuth : numeric
-        Sun azimuth angles in decimal degrees. The azimuth convention is
-        defined as degrees east of north (e.g. North = 0, East = 90,
-        West = 270).
+        Solar azimuth angles. See :term:`solar_azimuth`. [°]
+
+    return_components : bool, default ``False``
+        If ``False``, ``poa_sky_diffuse`` is returned.
+        If ``True``, ``diffuse_components`` is returned.
 
     Returns
     -------
+    numeric, dict, or DataFrame
+        Return type controlled by ``return_components`` argument.
+        If ``return_components=False``, ``poa_sky_diffuse`` is returned.
+        If ``return_components=True``, ``diffuse_components`` is returned.
+
     poa_sky_diffuse : numeric
-        The sky diffuse component of the solar radiation.
+        The sky diffuse component of irradiance on a tilted plane. [Wm⁻²]
+
+    diffuse_components : dict (array input) or DataFrame (Series input)
+        Keys/columns are:
+            * poa_sky_diffuse: The sky diffuse component of irradiance on a
+              tilted plane. [Wm⁻²]
+            * poa_isotropic: The portion of sky diffuse irradiance on a tilted
+              plane from the isotropic sky dome. [Wm⁻²]
+            * poa_circumsolar: The portion of sky diffuse irradiance on a
+              tilted plane from the circumsolar region. [Wm⁻²]
+            * poa_horizon: The portion of sky diffuse irradiance on a tilted
+              plane from the horizon. [Wm⁻²]
 
     Notes
     -----
@@ -947,20 +964,27 @@ def reindl(surface_tilt, surface_azimuth, dhi, dni, ghi, dni_extra,
     Implementation is based on Loutzenhiser et al.
     (2007) [3]_, Equation 8. The beam and ground reflectance portion of the
     equation have been removed, therefore the model described here generates
-    ONLY the diffuse radiation from the sky and circumsolar, so the form of the
-    equation varies slightly from Equation 8 in [3]_.
+    ONLY the diffuse radiation from the sky, circumsolar, and horizon
+    brightening, so the form of the equation varies slightly from Equation 8
+    in [3]_.
+
+    For clarity, the horizon component in ``reindl`` corresponds to the term
+    added on top of the ``haydavies`` formulation, on which ``reindl`` builds.
 
     References
     ----------
-    .. [1] Reindl, D. T., Beckmann, W. A., Duffie, J. A., 1990a. Diffuse
-       fraction correlations. Solar Energy 45(1), 1-7.
-       :doi:`10.1016/0038-092X(90)90060-P`
-    .. [2] Reindl, D. T., Beckmann, W. A., Duffie, J. A., 1990b. Evaluation of
-       hourly tilted surface radiation models. Solar Energy 45(1), 9-17.
+    .. [1] D. T. Reindl, "Estimating diffuse radiation on horizontal surfaces
+       and total radiation on tilted surfaces," M.S. thesis, University of
+       Wisconsin-Madison, Madison, WI, USA, 1988. Available:
+       https://web.archive.org/web/20240709013622/https://minds.wisconsin.edu/bitstream/handle/1793/47852/0001.pdf
+    .. [2] D. T. Reindl, W. A. Beckmann, and J. A. Duffie, "Evaluation of
+       hourly tilted surface radiation models," Solar Energy, vol. 45,
+       no. 1, pp. 9–17, 1990.
        :doi:`10.1016/0038-092X(90)90061-G`
-    .. [3] Loutzenhiser P. G. et. al., 2007. Empirical validation of models to
+    .. [3] P. G. Loutzenhiser, H. Manz, C. Felsmann, P. A. Strachan,
+       T. Frank, and G. M. Maxwell, "Empirical validation of models to
        compute solar irradiance on inclined surfaces for building energy
-       simulation. Solar Energy 81(2), 254-267
+       simulation," Solar Energy, vol. 81, no. 2, pp. 254–267, 2007.
        :doi:`10.1016/j.solener.2006.03.009`
     '''
 
@@ -981,16 +1005,31 @@ def reindl(surface_tilt, surface_azimuth, dhi, dni, ghi, dni_extra,
     HB = dni * cos_solar_zenith
     HB = np.maximum(HB, 0)
 
-    # these are the () and [] sub-terms of the second term of eqn 8
-    term1 = 1 - AI
-    term2 = 0.5 * (1 + tools.cosd(surface_tilt))
+    SVF = (1 + tools.cosd(surface_tilt)) / 2
+
     with np.errstate(invalid='ignore', divide='ignore'):
         hb_to_ghi = np.where(ghi == 0, 0, np.divide(HB, ghi))
-    term3 = 1 + np.sqrt(hb_to_ghi) * (tools.sind(0.5 * surface_tilt)**3)
-    sky_diffuse = dhi * (AI * Rb + term1 * term2 * term3)
-    sky_diffuse = np.maximum(sky_diffuse, 0)
+    h = np.sqrt(hb_to_ghi) * (tools.sind(surface_tilt / 2) ** 3)
 
-    return sky_diffuse
+    term1 = (1 - AI) * SVF
+    term2 = AI * Rb
+    term3 = term1 * h
+
+    poa_sky_diffuse = dhi * (term1 + term2 + term3)
+
+    if return_components:
+        diffuse_components = {
+            'poa_sky_diffuse': poa_sky_diffuse,
+            'poa_isotropic': dhi * term1,
+            'poa_circumsolar': dhi * term2,
+            'poa_horizon': dhi * term3
+        }
+
+        if isinstance(poa_sky_diffuse, pd.Series):
+            diffuse_components = pd.DataFrame(diffuse_components)
+        return diffuse_components
+    else:
+        return poa_sky_diffuse
 
 
 def king(surface_tilt, dhi, ghi, solar_zenith):
@@ -1008,31 +1047,31 @@ def king(surface_tilt, dhi, ghi, solar_zenith):
     Parameters
     ----------
     surface_tilt : numeric
-        Surface tilt angles in decimal degrees. The tilt angle is
-        defined as degrees from horizontal (e.g. surface facing up = 0,
-        surface facing horizon = 90)
+        Panel tilt from the horizontal. See :term:`surface_tilt`. [°]
 
     dhi : numeric
-        Diffuse horizontal irradiance. [Wm⁻²]
+        Diffuse horizontal irradiance. See :term:`dhi`. [Wm⁻²]
 
     ghi : numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     solar_zenith : numeric
-        Apparent (refraction-corrected) zenith angles in decimal degrees.
+        Solar apparent (refraction-corrected) zenith angles. [°]
 
     Returns
     --------
     poa_sky_diffuse : numeric
-        The diffuse component of the solar radiation.
+        The sky diffuse component of irradiance on a tilted plane. [Wm⁻²]
     '''
 
-    sky_diffuse = (dhi * (1 + tools.cosd(surface_tilt)) / 2 + ghi *
-                   (0.012 * solar_zenith - 0.04) *
-                   (1 - tools.cosd(surface_tilt)) / 2)
-    sky_diffuse = np.maximum(sky_diffuse, 0)
+    poa_sky_diffuse = (
+        dhi * (1 + tools.cosd(surface_tilt)) / 2 + ghi *
+        (0.012 * solar_zenith - 0.04) *
+        (1 - tools.cosd(surface_tilt)) / 2
+    )
+    poa_sky_diffuse = np.maximum(poa_sky_diffuse, 0)
 
-    return sky_diffuse
+    return poa_sky_diffuse
 
 
 def perez(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
@@ -1060,38 +1099,32 @@ def perez(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
     Parameters
     ----------
     surface_tilt : numeric
-        Surface tilt angles in decimal degrees. surface_tilt must be >=0
-        and <=180. The tilt angle is defined as degrees from horizontal
-        (e.g. surface facing up = 0, surface facing horizon = 90)
+        Surface tilt angle. See :term:`surface_tilt`.
+        [°]
 
     surface_azimuth : numeric
-        Surface azimuth angles in decimal degrees. surface_azimuth must
-        be >=0 and <=360. The azimuth convention is defined as degrees
-        east of north (e.g. North = 0, South=180 East = 90, West = 270).
+        Surface azimuth angle. See :term:`surface_azimuth`. [°]
 
     dhi : numeric
-        Diffuse horizontal irradiance. [Wm⁻²] DHI must be >=0.
+        Diffuse horizontal irradiance, must be >=0. [Wm⁻²]
 
     dni : numeric
-        Direct normal irradiance. [Wm⁻²] DNI must be >=0.
+        Direct normal irradiance, must be >=0. [Wm⁻²]
 
     dni_extra : numeric
         Extraterrestrial normal irradiance. [Wm⁻²]
 
     solar_zenith : numeric
-        apparent (refraction-corrected) zenith angles in decimal
-        degrees. solar_zenith must be >=0 and <=180.
+        apparent (refraction-corrected) zenith angle. [°]
 
     solar_azimuth : numeric
-        Sun azimuth angles in decimal degrees. solar_azimuth must be >=0
-        and <=360. The azimuth convention is defined as degrees east of
-        north (e.g. North = 0, East = 90, West = 270).
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
 
     airmass : numeric
         Relative (not pressure-corrected) airmass values. If AM is a
         DataFrame it must be of the same size as all other DataFrame
-        inputs. AM must be >=0 (careful using the 1/sec(z) model of AM
-        generation)
+        inputs. AM must be >=0 (careful using the 1/cos(z) model of AM
+        generation). [unitless]
 
     model : string, default 'allsitescomposite1990'
         A string which selects the desired set of Perez coefficients. If
@@ -1117,21 +1150,25 @@ def perez(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
 
     Returns
     --------
-    numeric, OrderedDict, or DataFrame
+    numeric, dict, or DataFrame
         Return type controlled by `return_components` argument.
-        If ``return_components=False``, `sky_diffuse` is returned.
+        If ``return_components=False``, `poa_sky_diffuse` is returned.
         If ``return_components=True``, `diffuse_components` is returned.
 
-    sky_diffuse : numeric
+    poa_sky_diffuse : numeric
         The sky diffuse component of the solar radiation on a tilted
-        surface.
+        plane. [Wm⁻²]
 
-    diffuse_components : OrderedDict (array input) or DataFrame (Series input)
+    diffuse_components : dict (array input) or DataFrame (Series input)
         Keys/columns are:
-            * sky_diffuse: Total sky diffuse
-            * isotropic
-            * circumsolar
-            * horizon
+            * poa_sky_diffuse: The sky diffuse component of irradiance on a
+              tilted plane. [Wm⁻²]
+            * poa_isotropic: The portion of sky diffuse irradiance on a tilted
+              plane from the isotropic sky dome. [Wm⁻²]
+            * poa_circumsolar: The portion of sky diffuse irradiance on a
+              tilted plane from the circumsolar region. [Wm⁻²]
+            * poa_horizon: The portion of sky diffuse irradiance on a tilted
+              plane from the horizon. [Wm⁻²]
 
 
     References
@@ -1204,26 +1241,25 @@ def perez(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
     term2 = F1 * A / B
     term3 = F2 * tools.sind(surface_tilt)
 
-    sky_diffuse = np.maximum(dhi * (term1 + term2 + term3), 0)
+    poa_sky_diffuse = np.maximum(dhi * (term1 + term2 + term3), 0)
 
     # we've preserved the input type until now, so don't ruin it!
-    if isinstance(sky_diffuse, pd.Series):
-        sky_diffuse[np.isnan(airmass)] = 0
+    if isinstance(poa_sky_diffuse, pd.Series):
+        poa_sky_diffuse[np.isnan(airmass)] = 0
     else:
-        sky_diffuse = np.where(np.isnan(airmass), 0, sky_diffuse)
+        poa_sky_diffuse = np.where(np.isnan(airmass), 0, poa_sky_diffuse)
 
     if return_components:
-        diffuse_components = OrderedDict()
-        diffuse_components['sky_diffuse'] = sky_diffuse
+        diffuse_components = {
+            'poa_sky_diffuse': poa_sky_diffuse,
+            'poa_isotropic': dhi * term1,
+            'poa_circumsolar': dhi * term2,
+            'poa_horizon': dhi * term3
+        }
 
-        # Calculate the different components
-        diffuse_components['isotropic'] = dhi * term1
-        diffuse_components['circumsolar'] = dhi * term2
-        diffuse_components['horizon'] = dhi * term3
-
-        # Set values of components to 0 when sky_diffuse is 0
-        mask = sky_diffuse == 0
-        if isinstance(sky_diffuse, pd.Series):
+        # Set values of components to 0 when poa_sky_diffuse is 0
+        mask = poa_sky_diffuse == 0
+        if isinstance(poa_sky_diffuse, pd.Series):
             diffuse_components = pd.DataFrame(diffuse_components)
             diffuse_components.loc[mask] = 0
         else:
@@ -1231,7 +1267,7 @@ def perez(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
                                   diffuse_components.items()}
         return diffuse_components
     else:
-        return sky_diffuse
+        return poa_sky_diffuse
 
 
 def _calc_delta(dhi, dni_extra, solar_zenith, airmass=None):
@@ -1326,39 +1362,31 @@ def perez_driesse(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
     Parameters
     ----------
     surface_tilt : numeric
-        Surface tilt angles in decimal degrees. surface_tilt must be >=0
-        and <=180. The tilt angle is defined as degrees from horizontal
-        (e.g. surface facing up = 0, surface facing horizon = 90)
+        Surface tilt angle. See :term:`surface_tilt`. [°]
 
     surface_azimuth : numeric
-        Surface azimuth angles in decimal degrees. surface_azimuth must
-        be >=0 and <=360. The azimuth convention is defined as degrees
-        east of north (e.g. North = 0, South=180 East = 90, West = 270).
+        Surface azimuth angle. See :term:`surface_azimuth`. [°]
 
     dhi : numeric
-        Diffuse horizontal irradiance. [Wm⁻²] dhi must be >=0.
+        Diffuse horizontal irradiance, must be >=0. [Wm⁻²]
 
     dni : numeric
-        Direct normal irradiance. [Wm⁻²] dni must be >=0.
+        Direct normal irradiance, must be >=0. [Wm⁻²]
 
     dni_extra : numeric
         Extraterrestrial normal irradiance. [Wm⁻²]
 
     solar_zenith : numeric
-        apparent (refraction-corrected) zenith angles in decimal
-        degrees. solar_zenith must be >=0 and <=180.
+        apparent (refraction-corrected) zenith angle. [°]
 
     solar_azimuth : numeric
-        Sun azimuth angles in decimal degrees. solar_azimuth must be >=0
-        and <=360. The azimuth convention is defined as degrees east of
-        north (e.g. North = 0, East = 90, West = 270).
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
 
     airmass : numeric, optional
         Relative (not pressure-corrected) airmass values. If ``airmass`` is a
         DataFrame it must be of the same size as all other DataFrame
-        inputs. The kastenyoung1989 airmass calculation is used internally
-        and is also recommended when pre-calculating airmass because
-        it was used in the original model development.
+        inputs. AM must be >=0 (careful using the 1/cos(z) model of AM
+        generation). [unitless]
 
     return_components: bool (optional, default=False)
         Flag used to decide whether to return the calculated diffuse components
@@ -1366,21 +1394,24 @@ def perez_driesse(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
 
     Returns
     --------
-    numeric, OrderedDict, or DataFrame
+    numeric, dict, or DataFrame
         Return type controlled by `return_components` argument.
-        If ``return_components=False``, `sky_diffuse` is returned.
+        If ``return_components=False``, `poa_sky_diffuse` is returned.
         If ``return_components=True``, `diffuse_components` is returned.
 
-    sky_diffuse : numeric
-        The sky diffuse component of the solar radiation on a tilted
-        surface.
+    poa_sky_diffuse : numeric
+        The sky diffuse component of irradiance on a tilted plane. [Wm⁻²]
 
-    diffuse_components : OrderedDict (array input) or DataFrame (Series input)
+    diffuse_components : dict (array input) or DataFrame (Series input)
         Keys/columns are:
-            * sky_diffuse: Total sky diffuse
-            * isotropic
-            * circumsolar
-            * horizon
+            * poa_sky_diffuse: The sky diffuse component of irradiance on a
+              tilted plane. [Wm⁻²]
+            * poa_isotropic: The portion of sky diffuse irradiance on a
+              tilted plane from the isotropic sky dome. [Wm⁻²]
+            * poa_circumsolar: The portion of sky diffuse irradiance on a
+              tilted plane from the circumsolar region. [Wm⁻²]
+            * poa_horizon: The portion of sky diffuse irradiance on a tilted
+              plane from the horizon. [Wm⁻²]
 
     Notes
     -----
@@ -1437,23 +1468,22 @@ def perez_driesse(surface_tilt, surface_azimuth, dhi, dni, dni_extra,
     term2 = F1 * A / B
     term3 = F2 * tools.sind(surface_tilt)
 
-    sky_diffuse = np.maximum(dhi * (term1 + term2 + term3), 0)
+    poa_sky_diffuse = np.maximum(dhi * (term1 + term2 + term3), 0)
 
     if return_components:
-        diffuse_components = OrderedDict()
-        diffuse_components['sky_diffuse'] = sky_diffuse
+        diffuse_components = {
+            'poa_sky_diffuse': poa_sky_diffuse,
+            'poa_isotropic': dhi * term1,
+            'poa_circumsolar': dhi * term2,
+            'poa_horizon': dhi * term3
+        }
 
-        # Calculate the different components
-        diffuse_components['isotropic'] = dhi * term1
-        diffuse_components['circumsolar'] = dhi * term2
-        diffuse_components['horizon'] = dhi * term3
-
-        if isinstance(sky_diffuse, pd.Series):
+        if isinstance(poa_sky_diffuse, pd.Series):
             diffuse_components = pd.DataFrame(diffuse_components)
 
         return diffuse_components
     else:
-        return sky_diffuse
+        return poa_sky_diffuse
 
 
 def _poa_from_ghi(surface_tilt, surface_azimuth,
@@ -1464,7 +1494,7 @@ def _poa_from_ghi(surface_tilt, surface_azimuth,
     Transposition function that includes decomposition of GHI using the
     continuous Erbs-Driesse model.
 
-    Helper function for ghi_from_poa_driesse_2023.
+    Helper function for ghi_from_poa_driesse_2024.
     '''
     # Contributed by Anton Driesse (@adriesse), PV Performance Labs. Nov., 2023
 
@@ -1490,7 +1520,7 @@ def _ghi_from_poa(surface_tilt, surface_azimuth,
     '''
     Reverse transposition function that uses the scalar bisection from scipy.
 
-    Helper function for ghi_from_poa_driesse_2023.
+    Helper function for ghi_from_poa_driesse_2024.
     '''
     # Contributed by Anton Driesse (@adriesse), PV Performance Labs. Nov., 2023
 
@@ -1534,7 +1564,7 @@ def _ghi_from_poa(surface_tilt, surface_azimuth,
     return ghi, conv, niter
 
 
-def ghi_from_poa_driesse_2023(surface_tilt, surface_azimuth,
+def ghi_from_poa_driesse_2024(surface_tilt, surface_azimuth,
                               solar_zenith, solar_azimuth,
                               poa_global,
                               dni_extra, airmass=None, albedo=0.25,
@@ -1549,32 +1579,45 @@ def ghi_from_poa_driesse_2023(surface_tilt, surface_azimuth,
     Parameters
     ----------
     surface_tilt : numeric
-        Panel tilt from horizontal. [degree]
+        Panel tilt from horizontal. See :term:`surface_tilt`. [°]
+
     surface_azimuth : numeric
-        Panel azimuth from north. [degree]
+        Panel azimuth. See :term:`surface_azimuth`. [°]
+
     solar_zenith : numeric
-        Solar zenith angle. [degree]
+        Solar zenith angle. See :term:`solar_zenith`. [°]
+
     solar_azimuth : numeric
-        Solar azimuth angle. [degree]
+        Solar azimuth angle. See :term:`solar_azimuth`. [°]
+
     poa_global : numeric
-        Plane-of-array global irradiance, aka global tilted irradiance. [Wm⁻²]
+        Plane-of-array global irradiance, aka global tilted irradiance.
+        See :term:`poa_global`. [Wm⁻²]
+
     dni_extra : numeric
-        Extraterrestrial direct normal irradiance. [Wm⁻²]
+        Extraterrestrial direct normal irradiance. See :Term:`dni_extra`.
+        [Wm⁻²]
+
     airmass : numeric, optional
-        Relative airmass (not adjusted for pressure). [unitless]
+        Relative airmass (not adjusted for pressure). See
+        :term:`airmass_relative`. [unitless]
+
     albedo : numeric, default 0.25
-        Ground surface albedo. [unitless]
+        Ground surface albedo. See :term:`albedo`. [unitless]
+
     xtol : numeric, default 0.01
-        Convergence criterion. The estimated GHI will be within xtol of the
+        Convergence criterion. The estimated GHI will be within ``xtol`` of the
         true value. Must be positive. [Wm⁻²]
+
     full_output : boolean, default False
-        If full_output is False, only ghi is returned, otherwise the return
-        value is (ghi, converged, niter). (see Returns section for details).
+        If full_output is False, only ``ghi`` is returned, otherwise the return
+        value is (``ghi``, ``converged``, ``niter``).
+        (see Returns section for details).
 
     Returns
     -------
     ghi : numeric
-        Estimated GHI. [Wm⁻²]
+        Estimated global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
     converged : boolean, optional
         Present if full_output=True. Indicates which elements converged
         successfully.
@@ -1623,11 +1666,14 @@ def ghi_from_poa_driesse_2023(surface_tilt, surface_azimuth,
         return ghi
 
 
-@renamed_kwarg_warning(
-    since='0.11.2',
-    old_param_name='clearsky_ghi',
-    new_param_name='ghi_clear',
-    removal="0.14.0")
+ghi_from_poa_driesse_2023 = deprecated(
+    since="0.15.2",
+    name="pvlib.irradiance.ghi_from_poa_driesse_2023",
+    alternative="pvlib.irradiance.ghi_from_poa_driesse_2024",
+    removal="0.17.0",
+)(ghi_from_poa_driesse_2024)
+
+
 def clearsky_index(ghi, ghi_clear, max_clearsky_index=2.0):
     """
     Calculate the clearsky index.
@@ -1638,10 +1684,10 @@ def clearsky_index(ghi, ghi_clear, max_clearsky_index=2.0):
     Parameters
     ----------
     ghi : numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     ghi_clear : numeric
-        Modeled clearsky GHI
+        Modeled clearsky GHI.  See :term:`ghi_clear`. [Wm⁻²]
 
         .. versionchanged:: 0.11.2
             Renamed from ``ghi_clearsky`` to ``ghi_clear``.
@@ -1653,7 +1699,7 @@ def clearsky_index(ghi, ghi_clear, max_clearsky_index=2.0):
     Returns
     -------
     clearsky_index : numeric
-        Clearsky index
+        Clearsky index. [unitless]
     """
     clearsky_index = ghi / ghi_clear
     # set +inf, -inf, and nans to zero
@@ -1684,28 +1730,28 @@ def clearness_index(ghi, solar_zenith, extra_radiation, min_cos_zenith=0.065,
     Parameters
     ----------
     ghi : numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     solar_zenith : numeric
-        True (not refraction-corrected) solar zenith angle in decimal
-        degrees.
+        True (not refraction-corrected) solar zenith angle.
+        See :term:`solar_zenith`. [°]
 
     extra_radiation : numeric
-        Irradiance incident at the top of the atmosphere
+        Irradiance incident at the top of the atmosphere. See
+        :term:`dni_extra`. [Wm⁻²]
 
     min_cos_zenith : numeric, default 0.065
         Minimum value of cos(zenith) to allow when calculating global
-        clearness index `kt`. Equivalent to zenith = 86.273 degrees.
+        clearness index ``kt``. Equivalent to zenith = 86.273°.
 
     max_clearness_index : numeric, default 2.0
         Maximum value of the clearness index. The default, 2.0, allows
         for over-irradiance events typically seen in sub-hourly data.
-        NREL's SRRL Fortran code used 0.82 for hourly data.
 
     Returns
     -------
     kt : numeric
-        Clearness index
+        Clearness index. [unitless]
 
     References
     ----------
@@ -1737,20 +1783,20 @@ def clearness_index_zenith_independent(clearness_index, airmass,
     ----------
     clearness_index : numeric
         Ratio of global to extraterrestrial irradiance on a horizontal
-        plane
+        plane. [unitless]
 
     airmass : numeric
-        Airmass
+        Airmass. See :term:`airmass_relative`. [unitless]
 
     max_clearness_index : numeric, default 2.0
         Maximum value of the clearness index. The default, 2.0, allows
         for over-irradiance events typically seen in sub-hourly data.
-        NREL's SRRL Fortran code used 0.82 for hourly data.
+        NLR's SRRL Fortran code used 0.82 for hourly data.
 
     Returns
     -------
     kt_prime : numeric
-        Zenith independent clearness index
+        Zenith-independent clearness index. [unitless]
 
     References
     ----------
@@ -1789,7 +1835,7 @@ def disc(ghi, solar_zenith, datetime_or_doy, pressure=101325,
 
     The original report describing the DISC model [1]_ uses the
     relative airmass rather than the absolute (pressure-corrected)
-    airmass. However, the NREL implementation of the DISC model [2]_
+    airmass. However, the NLR implementation of the DISC model [2]_
     uses absolute airmass. PVLib Matlab also uses the absolute airmass.
     pvlib python defaults to absolute airmass, but the relative airmass
     can be used by supplying `pressure=None`.
@@ -1797,32 +1843,31 @@ def disc(ghi, solar_zenith, datetime_or_doy, pressure=101325,
     Parameters
     ----------
     ghi : numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     solar_zenith : numeric
-        True (not refraction-corrected) solar zenith angles in decimal
-        degrees.
+        True (not refraction-corrected) solar zenith angles. See
+        :term:`solar_zenith`. [°]
 
     datetime_or_doy : int, float, array, pd.DatetimeIndex
         Day of year or array of days of year e.g.
         pd.DatetimeIndex.dayofyear, or pd.DatetimeIndex.
 
     pressure : numeric or None, default 101325
-        Site pressure in Pascal. Uses absolute (pressure-corrected) airmass
-        by default. Set to ``None`` to use relative airmass.
+        Site pressure. See :term:`pressure`. [Pa]
 
     min_cos_zenith : numeric, default 0.065
         Minimum value of cos(zenith) to allow when calculating global
-        clearness index `kt`. Equivalent to zenith = 86.273 degrees.
+        clearness index :math:`k_t`. Equivalent to zenith = 86.273°.
 
     max_zenith : numeric, default 87
         Maximum value of zenith to allow in DNI calculation. DNI will be
-        set to 0 for times with zenith values greater than `max_zenith`.
+        set to 0 for times with zenith values greater than `max_zenith`. [°]
 
     max_airmass : numeric, default 12
         Maximum value of the airmass to allow in Kn calculation.
         Default value (12) comes from range over which Kn was fit
-        to airmass in the original paper.
+        to airmass in the original paper. [unitless]
 
     Returns
     -------
@@ -1830,11 +1875,11 @@ def disc(ghi, solar_zenith, datetime_or_doy, pressure=101325,
         Contains the following keys:
 
         * ``dni``: The modeled direct normal irradiance
-          in Wm⁻² provided by the
-          Direct Insolation Simulation Code (DISC) model.
+          provided by the Direct Insolation Simulation Code (DISC) model.
+          [Wm⁻²]
         * ``kt``: Ratio of global to extraterrestrial
-          irradiance on a horizontal plane.
-        * ``airmass``: Airmass
+          irradiance on a horizontal plane. [unitless]
+        * ``airmass``: Airmass. [unitless]
 
     References
     ----------
@@ -1844,7 +1889,7 @@ def disc(ghi, solar_zenith, datetime_or_doy, pressure=101325,
        Institute, 1987.
 
     .. [2] Maxwell, E. "DISC Model", Excel Worksheet.
-       https://www.nrel.gov/grid/solar-resource/disc.html
+       https://www.nlr.gov/grid/solar-resource/disc.html
 
     See Also
     --------
@@ -1943,17 +1988,16 @@ def dirint(ghi, solar_zenith, times, pressure=101325., use_delta_kt_prime=True,
     Parameters
     ----------
     ghi : array-like
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     solar_zenith : array-like
-        True (not refraction-corrected) solar_zenith angles in decimal
-        degrees.
+        True (not refraction-corrected) solar zenith angles. See
+        :term:`solar_zenith`. [°]
 
     times : DatetimeIndex
 
     pressure : float or array-like, default 101325.0
-        The site pressure in Pascal. Pressure may be measured or an
-        average pressure may be calculated from site altitude.
+        Air pressure. See :term:`pressure`. [Pa]
 
     use_delta_kt_prime : bool, default True
         If True, indicates that the stability index delta_kt_prime is
@@ -1964,30 +2008,30 @@ def dirint(ghi, solar_zenith, times, pressure=101325., use_delta_kt_prime=True,
         input data must be Series.
 
     temp_dew : float, or array-like, optional
-        Surface dew point temperatures, in degrees C. Values of temp_dew
+        Surface dew point temperatures, in. Values of ``temp_dew``
         may be numeric or NaN. Any single time period point with a
         temp_dew=NaN does not have dew point improvements applied. If
-        temp_dew is not provided, then dew point improvements are not
-        applied.
+        ``temp_dew`` is not provided, then dew point improvements are not
+        applied. See :term:`temp_dew`. [°C]
 
     min_cos_zenith : numeric, default 0.065
         Minimum value of cos(zenith) to allow when calculating global
-        clearness index `kt`. Equivalent to zenith = 86.273 degrees.
+        clearness index Kt. Equivalent to zenith = 86.273°. [°]
 
     max_zenith : numeric, default 87
         Maximum value of zenith to allow in DNI calculation. DNI will be
-        set to 0 for times with zenith values greater than `max_zenith`.
+        set to 0 for times with zenith values greater than ``max_zenith``. [°]
 
     Returns
     -------
-    dni : array-like
-        The modeled direct normal irradiance in Wm⁻² provided by the
-        DIRINT model.
+    dni : pd.Series
+        Estimated direct normal irradiance. [Wm⁻²]
 
     Notes
     -----
-    DIRINT model requires time series data (ie. one of the inputs must
-    be a vector of length > 2).
+    The DIRINT model was developed for time series data with length > 2.
+    The implementation in pvlib assumes the data are periodic which may
+    affect the first and last DNI values.
 
     References
     ----------
@@ -2082,9 +2126,9 @@ def _dirint_coeffs(times, kt_prime, solar_zenith, w, delta_kt_prime):
     Parameters
     ----------
     times : pd.DatetimeIndex
-    kt_prime : Zenith-independent clearness index
-    solar_zenith : Solar zenith angle
-    w : precipitable water estimated from surface dew-point temperature
+    kt_prime : Zenith-independent clearness index. [unitless]
+    solar_zenith : Solar zenith angle. [°]
+    w : precipitable water estimated from surface dew-point temperature. [cm]
     delta_kt_prime : stability index
 
     Returns
@@ -2125,6 +2169,7 @@ def _dirint_bins(times, kt_prime, zenith, w, delta_kt_prime):
     -------
     tuple of kt_prime_bin, zenith_bin, w_bin, delta_kt_prime_bin
     """
+
     # @wholmgren: the following bin assignments use MATLAB's 1-indexing.
     # Later, we'll subtract 1 to conform to Python's 0-indexing.
 
@@ -2168,16 +2213,6 @@ def _dirint_bins(times, kt_prime, zenith, w, delta_kt_prime):
     return kt_prime_bin, zenith_bin, w_bin, delta_kt_prime_bin
 
 
-@renamed_kwarg_warning(
-    since='0.11.2',
-    old_param_name='ghi_clearsky',
-    new_param_name='ghi_clear',
-    removal="0.14.0")
-@renamed_kwarg_warning(
-    since='0.11.2',
-    old_param_name='dni_clearsky',
-    new_param_name='dni_clear',
-    removal="0.14.0")
 def dirindex(ghi, ghi_clear, dni_clear, zenith, times, pressure=101325.,
              use_delta_kt_prime=True, temp_dew=None, min_cos_zenith=0.065,
              max_zenith=87):
@@ -2195,30 +2230,31 @@ def dirindex(ghi, ghi_clear, dni_clear, zenith, times, pressure=101325.,
     Parameters
     ----------
     ghi : array-like
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     ghi_clear : array-like
-        Global horizontal irradiance from clear sky model. [Wm⁻²]
+        Global horizontal irradiance from clear sky model. See
+        :term:`ghi_clear`. [Wm⁻²]
 
         .. versionchanged:: 0.11.2
             Renamed from ``ghi_clearsky`` to ``ghi_clear``.
 
     dni_clear : array-like
-        Direct normal irradiance from clear sky model. [Wm⁻²]
+        Direct normal irradiance from clear sky model. See
+        :term:`dni_clear`. [Wm⁻²]
 
         .. versionchanged:: 0.11.2
             Renamed from ``dni_clearsky`` to ``dni_clear``.
 
     zenith : array-like
-        True (not refraction-corrected) zenith angles in decimal
-        degrees. If Z is a vector it must be of the same size as all
-        other vector inputs. Z must be >=0 and <=180.
+        True (not refraction-corrected) zenith angles.
+        If ``zenith`` is a vector, it must be of the same size as all other
+        vector inputs. See :term`solar_zenith`. [°]
 
     times : DatetimeIndex
 
     pressure : float or array-like, default 101325.0
-        The site pressure in Pascal. Pressure may be measured or an
-        average pressure may be calculated from site altitude.
+        Air pressure. See :term:`pressure`. [Pa]
 
     use_delta_kt_prime : bool, default True
         If True, indicates that the stability index delta_kt_prime is
@@ -2246,7 +2282,7 @@ def dirindex(ghi, ghi_clear, dni_clear, zenith, times, pressure=101325.,
     Returns
     -------
     dni : array-like
-        The modeled direct normal irradiance. [Wm⁻²]
+        The modeled direct normal irradiance. See :term:`dni`. [Wm⁻²]
 
     Notes
     -----
@@ -2298,35 +2334,30 @@ def gti_dirint(poa_global, aoi, solar_zenith, solar_azimuth, times,
     Parameters
     ----------
     poa_global : array-like
-        Plane of array global irradiance. [Wm⁻²]
+        Plane of array global irradiance. See :term:`poa_global`. [Wm⁻²]
 
     aoi : array-like
         Angle of incidence of solar rays with respect to the module
-        surface normal.
+        surface normal. See :term:`aoi`. [°]
 
     solar_zenith : array-like
         True (not refraction-corrected) solar zenith angles in decimal
-        degrees.
+        degrees. See :term:`solar_zenith`. [°]
 
     solar_azimuth : array-like
-        Solar azimuth angles in decimal degrees.
+        Solar azimuth angles. See :term:`solar_azimuth`. [°]
 
     times : DatetimeIndex
         Time indices for the input array-like data.
 
     surface_tilt : numeric
-        Surface tilt angles in decimal degrees. Tilt must be >=0 and
-        <=180. The tilt angle is defined as degrees from horizontal
-        (e.g. surface facing up = 0, surface facing horizon = 90).
+        Surface tilt angle, see :term:`surface_tilt`. [°]
 
     surface_azimuth : numeric
-        Surface azimuth angles in decimal degrees. surface_azimuth must
-        be >=0 and <=360. The Azimuth convention is defined as degrees
-        east of north (e.g. North = 0, South=180 East = 90, West = 270).
+        Surface azimuth angles, see :term:`surface_azimuth`. [°]
 
     pressure : numeric, default 101325.0
-        The site pressure in Pascal. Pressure may be measured or an
-        average pressure may be calculated from site altitude.
+        Site air pressure. See :term:`pressure`. [Pa]
 
     use_delta_kt_prime : bool, default True
         If True, indicates that the stability index delta_kt_prime is
@@ -2337,14 +2368,14 @@ def gti_dirint(poa_global, aoi, solar_zenith, solar_azimuth, times,
         input data must be Series.
 
     temp_dew : float, or array-like, optional
-        Surface dew point temperatures, in degrees C. Values of temp_dew
+        Surface dew point temperature. Values of ``temp_dew``
         may be numeric or NaN. Any single time period point with a
         temp_dew=NaN does not have dew point improvements applied. If
         temp_dew is not provided, then dew point improvements are not
-        applied.
+        applied. See :term:`temp_dew`. [°C]
 
     albedo : numeric, default 0.25
-        Ground surface albedo. [unitless]
+        Ground surface albedo. See :term:`albedo`. [unitless]
 
     model : String, default 'perez'
         Irradiance model.  See :py:func:`get_sky_diffuse` for allowed values.
@@ -2367,8 +2398,7 @@ def gti_dirint(poa_global, aoi, solar_zenith, solar_azimuth, times,
 
         * ``ghi``: the modeled global horizontal irradiance. [Wm⁻²]
         * ``dni``: the modeled direct normal irradiance. [Wm⁻²]
-        * ``dhi``: the modeled diffuse horizontal irradiance in
-          Wm⁻².
+        * ``dhi``: the modeled diffuse horizontal irradiance. [Wm⁻²]
 
     References
     ----------
@@ -2644,18 +2674,19 @@ def erbs(ghi, zenith, datetime_or_doy, min_cos_zenith=0.065, max_zenith=87):
     Parameters
     ----------
     ghi: numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
     zenith: numeric
-        True (not refraction-corrected) zenith angles in decimal degrees.
+        True (not refraction-corrected) zenith angles. See
+        :term:`solar_zenith`. [°]
     datetime_or_doy : int, float, array, pd.DatetimeIndex
         Day of year or array of days of year e.g.
         pd.DatetimeIndex.dayofyear, or pd.DatetimeIndex.
     min_cos_zenith : numeric, default 0.065
         Minimum value of cos(zenith) to allow when calculating global
-        clearness index `kt`. Equivalent to zenith = 86.273 degrees.
+        clearness index `kt`. Equivalent to zenith = 86.273°.
     max_zenith : numeric, default 87
         Maximum value of zenith to allow in DNI calculation. DNI will be
-        set to 0 for times with zenith values greater than `max_zenith`.
+        set to 0 for times with zenith values greater than ``max_zenith``. [°]
 
     Returns
     -------
@@ -2663,10 +2694,9 @@ def erbs(ghi, zenith, datetime_or_doy, min_cos_zenith=0.065, max_zenith=87):
         Contains the following keys/columns:
 
         * ``dni``: the modeled direct normal irradiance. [Wm⁻²]
-        * ``dhi``: the modeled diffuse horizontal irradiance in
-          Wm⁻².
+        * ``dhi``: the modeled diffuse horizontal irradiance [Wm⁻²].
         * ``kt``: Ratio of global to extraterrestrial irradiance
-          on a horizontal plane.
+          on a horizontal plane. [unitless]
 
     References
     ----------
@@ -2742,23 +2772,30 @@ def erbs_driesse(ghi, zenith, datetime_or_doy=None, dni_extra=None,
     Parameters
     ----------
     ghi: numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
+
     zenith: numeric
-        True (not refraction-corrected) zenith angles in decimal degrees.
+        True (not refraction-corrected) zenith angles. See
+        :term:`solar_zenith`. [°]
+
     datetime_or_doy : int, float, array or pd.DatetimeIndex, optional
         Day of year or array of days of year e.g.
         pd.DatetimeIndex.dayofyear, or pd.DatetimeIndex.
-        Either datetime_or_doy or dni_extra must be provided.
+        Either ``datetime_or_doy`` or ``dni_extra`` must be provided.
+
     dni_extra : numeric, optional
         Extraterrestrial normal irradiance.
-        dni_extra can be provided if available to avoid recalculating it
+        ``dni_extra`` can be provided if available to avoid recalculating it
         inside this function.  In this case datetime_or_doy is not required.
+        See :term:`dni_extra`. [Wm⁻²]
+
     min_cos_zenith : numeric, default 0.065
         Minimum value of cos(zenith) to allow when calculating global
-        clearness index `kt`. Equivalent to zenith = 86.273 degrees.
+        clearness index Kt. Equivalent to zenith = 86.273°.
+
     max_zenith : numeric, default 87
         Maximum value of zenith to allow in DNI calculation. DNI will be
-        set to 0 for times with zenith values greater than `max_zenith`.
+        set to 0 for times with zenith values greater than ``max_zenith``. [°]
 
     Returns
     -------
@@ -2766,15 +2803,14 @@ def erbs_driesse(ghi, zenith, datetime_or_doy=None, dni_extra=None,
         Contains the following keys/columns:
 
         * ``dni``: the modeled direct normal irradiance. [Wm⁻²]
-        * ``dhi``: the modeled diffuse horizontal irradiance in
-          Wm⁻².
+        * ``dhi``: the modeled diffuse horizontal irradiance [Wm⁻²].
         * ``kt``: Ratio of global to extraterrestrial irradiance
-          on a horizontal plane.
+          on a horizontal plane. [unitless]
 
     Raises
     ------
     ValueError
-        If neither datetime_or_doy nor dni_extra is provided.
+        If neither ``datetime_or_doy`` nor ``dni_extra`` is provided.
 
     Notes
     -----
@@ -2863,20 +2899,30 @@ def orgill_hollands(ghi, zenith, datetime_or_doy, dni_extra=None,
     Parameters
     ----------
     ghi: numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
+
     zenith: numeric
-        True (not refraction-corrected) zenith angles in decimal degrees.
-    datetime_or_doy : int, float, array, pd.DatetimeIndex
+        True (not refraction-corrected) zenith angles. See
+        :term:`solar_zenith`. [°]
+
+    datetime_or_doy : int, float, array or pd.DatetimeIndex, optional
         Day of year or array of days of year e.g.
         pd.DatetimeIndex.dayofyear, or pd.DatetimeIndex.
+        Either ``datetime_or_doy`` or ``dni_extra`` must be provided.
+
     dni_extra : numeric, optional
-        Extraterrestrial direct normal irradiance. [W/m2]
+        Extraterrestrial normal irradiance.
+        ``dni_extra`` can be provided if available to avoid recalculating it
+        inside this function.  In this case datetime_or_doy is not required.
+        See :term:`dni_extra`. [Wm⁻²]
+
     min_cos_zenith : numeric, default 0.065
         Minimum value of cos(zenith) to allow when calculating global
-        clearness index `kt`. Equivalent to zenith = 86.273 degrees.
+        clearness index Kt. Equivalent to zenith = 86.273°.
+
     max_zenith : numeric, default 87
         Maximum value of zenith to allow in DNI calculation. DNI will be
-        set to 0 for times with zenith values greater than `max_zenith`.
+        set to 0 for times with zenith values greater than ``max_zenith``. [°]
 
     Returns
     -------
@@ -2884,10 +2930,9 @@ def orgill_hollands(ghi, zenith, datetime_or_doy, dni_extra=None,
         Contains the following keys/columns:
 
         * ``dni``: the modeled direct normal irradiance. [Wm⁻²]
-        * ``dhi``: the modeled diffuse horizontal irradiance in
-          Wm⁻².
+        * ``dhi``: the modeled diffuse horizontal irradiance [Wm⁻²].
         * ``kt``: Ratio of global to extraterrestrial irradiance
-          on a horizontal plane.
+          on a horizontal plane. [unitless]
 
     References
     ----------
@@ -2956,22 +3001,29 @@ def boland(ghi, solar_zenith, datetime_or_doy, a_coeff=8.645, b_coeff=0.613,
     Parameters
     ----------
     ghi: numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
+
     solar_zenith: numeric
-        True (not refraction-corrected) zenith angles in decimal degrees.
-    datetime_or_doy : numeric, pandas.DatetimeIndex
-        Day of year or array of days of year e.g.
-        pd.DatetimeIndex.dayofyear, or pd.DatetimeIndex.
+        True (not refraction-corrected) zenith angles. See
+        :term:`solar_zenith`. [°]
+
+    datetime_or_doy : numeric or pd.DatetimeIndex.
+        Day of year or array of days of year e.g. pd.DatetimeIndex.dayofyear,
+        or pd.DatetimeIndex.
+
     a_coeff : float, default 8.645
         Logistic curve fit coefficient.
+
     b_coeff : float, default 0.613
         Logistic curve fit coefficient.
+
     min_cos_zenith : numeric, default 0.065
         Minimum value of cos(zenith) to allow when calculating global
-        clearness index :math:`k_t`. Equivalent to zenith = 86.273 degrees.
+        clearness index `kt`. Equivalent to zenith = 86.273°.
+
     max_zenith : numeric, default 87
         Maximum value of zenith to allow in DNI calculation. DNI will be
-        set to 0 for times with zenith values greater than `max_zenith`.
+        set to 0 for times with zenith values greater than ``max_zenith``. [°]
 
     Returns
     -------
@@ -2979,10 +3031,9 @@ def boland(ghi, solar_zenith, datetime_or_doy, a_coeff=8.645, b_coeff=0.613,
         Contains the following keys/columns:
 
         * ``dni``: the modeled direct normal irradiance. [Wm⁻²]
-        * ``dhi``: the modeled diffuse horizontal irradiance in
-          Wm⁻².
+        * ``dhi``: the modeled diffuse horizontal irradiance. [Wm⁻²]
         * ``kt``: Ratio of global to extraterrestrial irradiance
-          on a horizontal plane.
+          on a horizontal plane. [unitless]
 
     References
     ----------
@@ -3052,24 +3103,24 @@ def campbell_norman(zenith, transmittance, pressure=101325.0,
     Parameters
     ----------
     zenith: pd.Series
-        True (not refraction-corrected) zenith angles in decimal
-        degrees. If Z is a vector it must be of the same size as all
-        other vector inputs. Z must be >=0 and <=180.
+        True (not refraction-corrected) zenith angles. If ``zenith`` is a
+        vector, it must be of the same size as all other vector inputs. [°]
 
     transmittance: float
         Atmospheric transmittance between 0 and 1.
 
     pressure: float, default 101325.0
-        Air pressure
+        Air pressure. See :term:`pressure`. [Pa]
 
     dni_extra: float, default 1367.0
         Direct irradiance incident at the top of the atmosphere.
+        See :term:`dni_extra`. [Wm⁻²]
 
     Returns
     -------
     irradiance: DataFrame
         Modeled direct normal irradiance, direct horizontal irradiance,
-        and global horizontal irradiance in Wm⁻²
+        and global horizontal irradiance. [Wm⁻²]
 
     References
     ----------
@@ -3111,13 +3162,13 @@ def _liujordan(zenith, transmittance, airmass, dni_extra=1367.0):
     zenith: pd.Series
         True (not refraction-corrected) zenith angles in decimal
         degrees. If Z is a vector it must be of the same size as all
-        other vector inputs. Z must be >=0 and <=180.
+        other vector inputs. [°]
 
     transmittance: float
         Atmospheric transmittance between 0 and 1.
 
-    pressure: float, default 101325.0
-        Air pressure
+    airmass: numeric
+        Optical air mass. [unitless]
 
     dni_extra: float, default 1367.0
         Direct irradiance incident at the top of the atmosphere.
@@ -3658,11 +3709,6 @@ def _get_dirint_coeffs():
     return coeffs[1:, 1:, :, :]
 
 
-@renamed_kwarg_warning(
-    since='0.11.2',
-    old_param_name='clearsky_dni',
-    new_param_name='dni_clear',
-    removal="0.14.0")
 def dni(ghi, dhi, zenith, dni_clear=None, clearsky_tolerance=1.1,
         zenith_threshold_for_zero_dni=88.0,
         zenith_threshold_for_clearsky_limit=80.0):
@@ -3678,17 +3724,17 @@ def dni(ghi, dhi, zenith, dni_clear=None, clearsky_tolerance=1.1,
     Parameters
     ----------
     ghi : Series
-        Global horizontal irradiance.
+        Global horizontal irradiance. See :term:`ghi`. [Wm⁻²]
 
     dhi : Series
-        Diffuse horizontal irradiance.
+        Diffuse horizontal irradiance. See :term:`dhi`. [Wm⁻²]
 
     zenith : Series
-        True (not refraction-corrected) zenith angles in decimal
-        degrees. Angles must be >=0 and <=180.
+        True (not refraction-corrected) zenith angles.
+        See :term:`solar_zenith`. [°]
 
     dni_clear : Series, optional
-        Clearsky direct normal irradiance. [Wm⁻²]
+        Clearsky direct normal irradiance. See :term:`dni_clear`. [Wm⁻²]
 
         .. versionchanged:: 0.11.2
             Renamed from ``clearsky_dni`` to ``dni_clear``.
@@ -3712,7 +3758,7 @@ def dni(ghi, dhi, zenith, dni_clear=None, clearsky_tolerance=1.1,
     Returns
     -------
     dni : Series
-        The modeled direct normal irradiance.
+        The modeled direct normal irradiance. See :Term:`dni`. [Wm⁻²]
     """
 
     # calculate DNI
@@ -3757,29 +3803,37 @@ def complete_irradiance(solar_zenith,
 
     Parameters
     ----------
-    solar_zenith : Series
-        Zenith angles in decimal degrees, with datetime index.
-        Angles must be >=0 and <=180. Must have the same datetime index
-        as ghi, dhi, and dni series, when available.
+    solar_zenith : series
+        Solar zenith angle, with datetime index.
+        Must have the same datetime index as ``ghi``, ``dhi``, and ``dni``,
+        when available. See :term:`solar_zenith`. [°]
+
     ghi : Series, optional
-        Pandas series of dni data, with datetime index. Must have the same
-        datetime index as dni, dhi, and zenith series, when available.
+        Pandas series of dni data [Wm⁻²], with datetime index. Must have the
+        same datetime index as ``dni``, ``dhi``, and ``zenith``, when
+        available. See :term:`ghi`. [Wm⁻²]
+
     dhi : Series, optional
-        Pandas series of dni data, with datetime index. Must have the same
-        datetime index as ghi, dni, and zenith series, when available.
+        Diffuse horizontal irradiance, with datetime index. Must have the
+        same datetime index as ``ghi``, ``dhi``, and ``solar_zenith``, when
+        available. See :term:`dhi`. [Wm⁻²]
+
     dni : Series, optional
-        Pandas series of dni data, with datetime index. Must have the same
-        datetime index as ghi, dhi, and zenith series, when available.
+        Pandas series of dni data [Wm⁻²], with datetime index. Must have the
+        same datetime index as ``ghi``, ``dhi``, and ``zenith``, when
+        available. See :term:`dni`. [Wm⁻²]
+
     dni_clear : Series, optional
         Pandas series of clearsky dni data [Wm⁻²]. Must have the same datetime
         index as ghi, dhi, dni, and zenith series, when available. See
-        :py:func:`dni` for details.
+        :py:func:`dni` for details. [Wm⁻²]
 
     Returns
     -------
     component_sum_df : Dataframe
         Pandas series of 'ghi', 'dhi', and 'dni' columns with datetime index
     """
+
     if ghi is not None and dhi is not None and dni is None:
         dni = pvlib.irradiance.dni(ghi, dhi, solar_zenith,
                                    dni_clear=dni_clear,
@@ -3808,11 +3862,11 @@ def louche(ghi, solar_zenith, datetime_or_doy, max_zenith=90):
     Parameters
     ----------
     ghi : numeric
-        Global horizontal irradiance. [Wm⁻²]
+        Global horizontal irradiance, see :term:`ghi`. [Wm⁻²]
 
     solar_zenith : numeric
-        True (not refraction-corrected) zenith angles in decimal
-        degrees. Angles must be >=0 and <=90.
+        True (not refraction-corrected) zenith angle.
+        See :term:`solar_zenith`. [°]
 
     datetime_or_doy : numeric, pandas.DatetimeIndex
         Day of year or array of days of year e.g.
@@ -3823,11 +3877,12 @@ def louche(ghi, solar_zenith, datetime_or_doy, max_zenith=90):
     data: OrderedDict or DataFrame
         Contains the following keys/columns:
 
-        * ``dni``: the modeled direct normal irradiance. [Wm⁻²]
-        * ``dhi``: the modeled diffuse horizontal irradiance in
-          Wm⁻².
-        * ``kt``: Ratio of global to extraterrestrial irradiance
-          on a horizontal plane.
+        * ``dni``: the modeled direct normal irradiance, see :term:`dni`.
+          [Wm⁻²]
+        * ``dhi``: the modeled diffuse horizontal irradiance, see :term:`dhi`.
+          [Wm⁻²]
+        * ``kt``: Clearness index. Ratio of global to
+          extraterrestrial irradiance on a horizontal plane. [unitless]
 
     References
     -------
@@ -3872,22 +3927,22 @@ def diffuse_par_spitters(daily_solar_zenith, global_diffuse_fraction):
 
     .. note::
        The diffuse fraction is defined as the ratio of
-       diffuse to global daily insolation, in J m⁻² day⁻¹ or equivalent.
+       diffuse to global daily insolation, in Jm⁻² day⁻¹ or equivalent.
 
     Parameters
     ----------
     daily_solar_zenith : numeric
-        Average daily solar zenith angle. In degrees [°].
+        Average daily solar zenith angle. See :term:`solar_zenith`. [°]
 
     global_diffuse_fraction : numeric
-        Fraction of daily global broadband insolation that is diffuse.
-        Unitless [0, 1].
+        Fraction of daily global broadband insolation that is diffuse, between
+        0 and 1. [unitless]
 
     Returns
     -------
     par_diffuse_fraction : numeric
         Fraction of daily photosynthetically active radiation (PAR) that is
-        diffuse. Unitless [0, 1].
+        diffuse, between 0 and 1. [unitless]
 
     Notes
     -----

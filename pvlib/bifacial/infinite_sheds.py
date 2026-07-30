@@ -45,19 +45,6 @@ def _poa_sky_diffuse_pv(dhi, gcr, surface_tilt):
     Integrated view factors from the shaded and unshaded parts of
     the row slant height to the sky.
 
-    Parameters
-    ----------
-    f_x : numeric
-        Fraction of row slant height from the bottom that is shaded from
-        direct irradiance. [unitless]
-    surface_tilt : numeric
-        Surface tilt angle in degrees from horizontal, e.g., surface facing up
-        = 0, surface facing horizon = 90. [degree]
-    gcr : float
-        Ratio of row slant length to row spacing (pitch). [unitless]
-    npoints : int, default 100
-        Number of points for integration. [unitless]
-
     A detailed calculation would be
 
         dhi * (f_x * vf_shade_sky_integ + (1 - f_x) * vf_noshade_sky_integ)
@@ -73,9 +60,6 @@ def _poa_sky_diffuse_pv(dhi, gcr, surface_tilt):
 
     Parameters
     ----------
-    f_x : numeric
-        Fraction of row slant height from the bottom that is shaded from
-        direct irradiance. [unitless]
     dhi : numeric
         Diffuse horizontal irradiance (DHI). [W/m^2]
     gcr : float
@@ -166,7 +150,7 @@ def _shaded_fraction(solar_zenith, solar_azimuth, surface_tilt,
        :doi:`10.1109/PVSC40753.2019.8980572`.
     .. [2] Kevin Anderson and Mark Mikofski, "Slope-Aware Backtracking for
        Single-Axis Trackers", Technical Report NREL/TP-5K00-76626, July 2020.
-       https://www.nrel.gov/docs/fy20osti/76626.pdf
+       :doi:`10.2172/1660126`
     """
     tan_phi = utils._solar_projection_tangent(
         solar_zenith, solar_azimuth, surface_azimuth)
@@ -301,7 +285,8 @@ def get_irradiance_poa(surface_tilt, surface_azimuth, solar_zenith,
         sky_diffuse_comps_horizontal = haydavies(0, 180, dhi, dni, dni_extra,
                                                  solar_zenith, solar_azimuth,
                                                  return_components=True)
-        circumsolar_horizontal = sky_diffuse_comps_horizontal['circumsolar']
+        circumsolar_horizontal = \
+            sky_diffuse_comps_horizontal['poa_circumsolar']
 
         # Call haydavies a second time where circumsolar_normal is facing
         # directly towards sun, and can be added to DNI
@@ -309,7 +294,7 @@ def get_irradiance_poa(surface_tilt, surface_azimuth, solar_zenith,
                                              dni, dni_extra, solar_zenith,
                                              solar_azimuth,
                                              return_components=True)
-        circumsolar_normal = sky_diffuse_comps_normal['circumsolar']
+        circumsolar_normal = sky_diffuse_comps_normal['poa_circumsolar']
 
         dhi = dhi - circumsolar_horizontal
         dni = dni + circumsolar_normal

@@ -18,6 +18,8 @@ import pvlib.irradiance  # avoid name conflict with full import
 from pvlib.pvsystem import _DC_MODEL_PARAMS
 from pvlib.tools import _build_kwargs
 
+from pvlib._deprecation import deprecated
+
 # keys that are used to detect input data and assign data to appropriate
 # ModelChain attribute
 # for ModelChain.weather
@@ -31,7 +33,7 @@ POA_KEYS = ('poa_global', 'poa_direct', 'poa_diffuse')
 # 'cell_temperature' overrides ModelChain.temperature_model and sets
 # ModelChain.cell_temperature to the data. If 'module_temperature' is provided,
 # overrides ModelChain.temperature_model with
-# pvlib.temperature.sapm_celL_from_module
+# pvlib.temperature.sapm_cell_from_module
 TEMPERATURE_KEYS = ('module_temperature', 'cell_temperature')
 
 DATA_KEYS = WEATHER_KEYS + POA_KEYS + TEMPERATURE_KEYS
@@ -46,7 +48,7 @@ DATA_KEYS = WEATHER_KEYS + POA_KEYS + TEMPERATURE_KEYS
 # for Flat-Plate Photovoltaic Arrays. SAND85-0330. Albuquerque, NM:
 # Sandia National Laboratories. Accessed September 3, 2013:
 # http://prod.sandia.gov/techlib/access-control.cgi/1985/850330.pdf
-# pvlib python does not implement that model, so use the SAPM instead.
+# pvlib-python does not implement that model, so it uses the SAPM instead.
 PVWATTS_CONFIG = dict(
     dc_model='pvwatts', ac_model='pvwatts', losses_model='pvwatts',
     transposition_model='perez', aoi_model='physical',
@@ -59,6 +61,13 @@ SAPM_CONFIG = dict(
 )
 
 
+@deprecated(
+    since="0.13.1",
+    removal="",
+    name="pvlib.modelchain.get_orientation",
+    alternative=None,
+    addendum=None,
+)
 def get_orientation(strategy, **kwargs):
     """
     Determine a PV system's surface tilt and surface azimuth
@@ -84,7 +93,7 @@ def get_orientation(strategy, **kwargs):
         surface_tilt = 0
     else:
         raise ValueError('invalid orientation strategy. strategy must '
-                         'be one of south_at_latitude, flat,')
+                         'be one of south_at_latitude_tilt, flat,')
 
     return surface_tilt, surface_azimuth
 
@@ -162,8 +171,8 @@ class ModelChainResult:
     # per DC array information
     total_irrad: Optional[PerArray[pd.DataFrame]] = field(default=None)
     """ DataFrame (or tuple of DataFrame, one for each array) containing
-    columns ``'poa_global'``, ``'poa_direct'`` ``'poa_diffuse'``,
-    ``poa_sky_diffuse'``, ``'poa_ground_diffuse'`` (W/m2); see
+    columns ``'poa_global'``, ``'poa_direct'``, ``'poa_diffuse'``,
+    ``poa_sky_diffuse'``, and ``'poa_ground_diffuse'`` (Wm⁻²); see
     :py:func:`~pvlib.irradiance.get_total_irradiance` for details.
     """
 
@@ -190,12 +199,12 @@ class ModelChainResult:
 
     cell_temperature: Optional[PerArray[pd.Series]] = field(default=None)
     """Series (or tuple of Series, one for each array) containing cell
-    temperature (C).
+    temperature (°C).
     """
 
     effective_irradiance: Optional[PerArray[pd.Series]] = field(default=None)
     """Series (or tuple of Series, one for each array) containing effective
-    irradiance (W/m2) which is total plane-of-array irradiance adjusted for
+    irradiance (Wm⁻²) which is total plane-of-array irradiance adjusted for
     reflections and spectral content.
     """
 
@@ -215,12 +224,12 @@ class ModelChainResult:
 
     dc_ohmic_losses: Optional[PerArray[pd.Series]] = field(default=None)
     """Series (or tuple of Series, one for each array) containing DC ohmic
-    loss (W) calculated by ``ModelChain.dc_ohmic_model``.
+    losses (W) calculated by ``ModelChain.dc_ohmic_model``.
     """
 
     # copies of input data, for user convenience
     weather: Optional[PerArray[pd.DataFrame]] = None
-    """DataFrame (or tuple of DataFrame, one for each array) contains a
+    """DataFrame (or tuple of DataFrame, one for each array) containing a
     copy of the input weather data.
     """
 
@@ -806,7 +815,7 @@ class ModelChain:
                              'system.arrays[i].module_parameters. Check that '
                              'the module_parameters for all Arrays in '
                              'system.arrays contain parameters for the '
-                             'physical, aoi, ashrae, martin_ruiz or interp '
+                             'physical, sapm, ashrae, martin_ruiz or interp '
                              'model; explicitly set the model with the '
                              'aoi_model kwarg; or set aoi_model="no_loss".')
 
@@ -1704,6 +1713,75 @@ class ModelChain:
             of Arrays in the PVSystem.
         ValueError
             If the DataFrames in `data` have different indexes.
+        Examples
+        --------
+        Single-array system:
+
+        >>> import pandas as pd
+        >>> from pvlib.pvsystem import PVSystem, Array, FixedMount
+        >>> from pvlib.location import Location
+        >>> from pvlib.modelchain import ModelChain
+        >>> location = Location(35, -110)
+        >>> mount = FixedMount(surface_tilt=30, surface_azimuth=180)
+        >>> array = Array(
+        ...     mount=mount,
+        ...     module_parameters={'pdc0': 300, 'gamma_pdc': -0.004},
+        ...     temperature_model_parameters={'u0': 25.0, 'u1': 6.84}
+        ... )
+        >>> system = PVSystem(
+        ...     arrays=[array],
+        ...     inverter_parameters={'pdc0': 300}
+        ... )
+        >>> mc = ModelChain(
+        ...     system, location,
+        ...     dc_model="pvwatts", ac_model="pvwatts",
+        ...     aoi_model="no_loss", spectral_model="no_loss",
+        ...     temperature_model="faiman"
+        ... )
+        >>> poa = pd.DataFrame({
+        ...     'poa_global': [900, 850],
+        ...     'poa_direct': [600, 560],
+        ...     'poa_diffuse': [300, 290],},
+        ...     index=pd.date_range("2021-06-01", periods=2, freq="h"))
+        >>> _ = mc.run_model_from_poa(poa)
+
+        Multi-array system:
+
+        >>> mount1 = FixedMount(surface_tilt=30, surface_azimuth=180)
+        >>> mount2 = FixedMount(surface_tilt=10, surface_azimuth=90)
+        >>> array1 = Array(
+        ...     mount=mount1,
+        ...     module_parameters={'pdc0': 300, 'gamma_pdc': -0.004},
+        ...     temperature_model_parameters={'u0': 25.0, 'u1': 6.84}
+        ... )
+        >>> array2 = Array(
+        ...     mount=mount2,
+        ...     module_parameters={'pdc0': 200, 'gamma_pdc': -0.004},
+        ...     temperature_model_parameters={'u0': 25.0, 'u1': 6.84}
+        ... )
+        >>> system = PVSystem(
+        ...     arrays=[array1, array2],
+        ...     inverter_parameters={'pdc0': 500}
+        ... )
+        >>> mc = ModelChain(
+        ...     system, location,
+        ...     dc_model="pvwatts", ac_model="pvwatts",
+        ...     aoi_model="no_loss", spectral_model="no_loss",
+        ...     temperature_model="faiman"
+        ... )
+        >>> poa1 = pd.DataFrame({
+        ...     'poa_global': [900, 880],
+        ...     'poa_direct': [600, 580],
+        ...     'poa_diffuse': [300, 300],},
+        ...     index=pd.date_range("2021-06-01", periods=2, freq="h"))
+        >>> poa2 = pd.DataFrame({
+        ...     'poa_global': [700, 720],
+        ...     'poa_direct': [400, 420],
+        ...     'poa_diffuse': [300, 300],},
+        ...     index=poa1.index)
+        >>> _ = mc.run_model_from_poa(
+        ...         [poa1, poa2]
+        ... )
 
         Notes
         -----
@@ -1789,6 +1867,75 @@ class ModelChain:
             of Arrays in the PVSystem.
         ValueError
             If the DataFrames in `data` have different indexes.
+        Examples
+        --------
+        Single-array system:
+
+        >>> import pandas as pd
+        >>> from pvlib.pvsystem import PVSystem, Array, FixedMount
+        >>> from pvlib.location import Location
+        >>> from pvlib.modelchain import ModelChain
+        >>> location = Location(35, -110)
+        >>> mount = FixedMount(surface_tilt=30, surface_azimuth=180)
+        >>> array = Array(
+        ...     mount=mount,
+        ...     module_parameters={'pdc0': 300, 'gamma_pdc': -0.004},
+        ...     temperature_model_parameters={'u0': 25.0, 'u1': 6.84}
+        ... )
+        >>> system = PVSystem(
+        ...     arrays=[array],
+        ...     inverter_parameters={'pdc0': 300}
+        ... )
+        >>> mc = ModelChain(
+        ...     system, location,
+        ...     dc_model="pvwatts", ac_model="pvwatts",
+        ...     aoi_model="no_loss", spectral_model="no_loss",
+        ...     temperature_model="faiman"
+        ... )
+        >>> eff = pd.DataFrame({
+        ...     'effective_irradiance': [900, 920],
+        ...     'temp_air': [25, 24],
+        ...     'wind_speed': [2.0, 1.5],},
+        ...     index=pd.date_range("2021-06-01", periods=2, freq="h"))
+        >>> _ = mc.run_model_from_effective_irradiance(eff)
+
+        Multi-array system:
+
+        >>> mount1 = FixedMount(surface_tilt=30, surface_azimuth=180)
+        >>> mount2 = FixedMount(surface_tilt=10, surface_azimuth=90)
+        >>> array1 = Array(
+        ...     mount=mount1,
+        ...     module_parameters={'pdc0': 300, 'gamma_pdc': -0.004},
+        ...     temperature_model_parameters={'u0': 25.0, 'u1': 6.84}
+        ... )
+        >>> array2 = Array(
+        ...     mount=mount2,
+        ...     module_parameters={'pdc0': 200, 'gamma_pdc': -0.004},
+        ...     temperature_model_parameters={'u0': 25.0, 'u1': 6.84}
+        ... )
+        >>> system = PVSystem(
+        ...     arrays=[array1, array2],
+        ...     inverter_parameters={'pdc0': 500}
+        ... )
+        >>> mc = ModelChain(
+        ...     system, location,
+        ...     dc_model="pvwatts", ac_model="pvwatts",
+        ...     aoi_model="no_loss", spectral_model="no_loss",
+        ...     temperature_model="faiman"
+        ... )
+        >>> eff1 = pd.DataFrame({
+        ...     'effective_irradiance': [900, 920],
+        ...     'temp_air': [25, 24],
+        ...     'wind_speed': [2.0, 1.5],},
+        ...     index=pd.date_range("2021-06-01", periods=2, freq="h"))
+        >>> eff2 = pd.DataFrame({
+        ...     'effective_irradiance': [600, 630],
+        ...     'temp_air': [26, 25],
+        ...     'wind_speed': [1.8, 1.2],},
+        ...     index=eff1.index)
+        >>> _ = mc.run_model_from_effective_irradiance(
+        ...         [eff1, eff2]
+        ... )
 
         Notes
         -----

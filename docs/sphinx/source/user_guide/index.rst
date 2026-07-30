@@ -21,10 +21,13 @@ This user guide is an overview and explains some of the key features of pvlib.
    modeling_topics/pvsystem
    modeling_topics/modelchain
    modeling_topics/timetimezones
+   modeling_topics/spectrum
    modeling_topics/bifacial
    modeling_topics/clearsky
    modeling_topics/weather_data
    modeling_topics/singlediode
+   modeling_topics/temperature
+   modeling_topics/iam
 
 .. toctree::
    :maxdepth: 2

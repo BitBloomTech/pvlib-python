@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 from numpy import nan
 import pandas as pd
-import pytz
+import zoneinfo
 from scipy.linalg import hankel
 
 import pytest
@@ -505,13 +505,13 @@ def test_linke_turbidity_corners():
         monthly_lt_nointerp(-90, 180),
         [1.35, 1.7, 1.35, 1.35, 1.35, 1.35, 1.35, 1.35, 1.35, 1.35, 1.35, 1.7])
     # test out of range exceptions at corners
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError, match="out of range"):
         monthly_lt_nointerp(91, -122)  # exceeds max latitude
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError, match="out of range"):
         monthly_lt_nointerp(38.2, 181)  # exceeds max longitude
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError, match="out of range"):
         monthly_lt_nointerp(-91, -122)  # exceeds min latitude
-    with pytest.raises(IndexError):
+    with pytest.raises(ValueError, match="out of range"):
         monthly_lt_nointerp(38.2, -181)  # exceeds min longitude
 
 
@@ -688,6 +688,14 @@ def test_detect_clearsky_window_too_short(detect_clearsky_data):
         clearsky.detect_clearsky(expected['GHI'], cs['ghi'], window_length=2)
 
 
+def test_detect_clearsky_infer_checks(detect_clearsky_threshold_data):
+    # GH 2542
+    expected, cs = detect_clearsky_threshold_data
+    expected = expected.resample('10min').mean()
+    cs = cs.resample('10min').mean()
+    clearsky.detect_clearsky(expected['GHI'], cs['ghi'], infer_limits=True)
+
+
 @pytest.mark.parametrize("window_length", [5, 10, 15, 20, 25])
 def test_detect_clearsky_optimizer_not_failed(
     detect_clearsky_data, window_length
@@ -762,7 +770,7 @@ def test_bird():
     times = pd.date_range(start='1/1/2015 0:00', end='12/31/2015 23:00',
                           freq='h')
     tz = -7  # test timezone
-    gmt_tz = pytz.timezone('Etc/GMT%+d' % -(tz))
+    gmt_tz = zoneinfo.ZoneInfo(f'Etc/GMT{-tz:+d}')  # noqa: E231
     times = times.tz_localize(gmt_tz)  # set timezone
     times_utc = times.tz_convert('UTC')
     # match test data from BIRD_08_16_2012.xls
