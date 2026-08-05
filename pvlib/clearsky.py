@@ -10,7 +10,7 @@ import calendar
 import numpy as np
 import pandas as pd
 from scipy.linalg import hankel
-import h5py
+import tables
 
 from pvlib import atmosphere, tools
 from pvlib.tools import _degrees_to_index
@@ -206,8 +206,8 @@ def lookup_linke_turbidity(time, latitude, longitude, filepath=None,
     latitude_index = _degrees_to_index(latitude, coordinate='latitude')
     longitude_index = _degrees_to_index(longitude, coordinate='longitude')
 
-    with h5py.File(filepath, 'r') as lt_h5_file:
-        lts = lt_h5_file['LinkeTurbidity'][latitude_index, longitude_index]
+    with tables.open_file(filepath, mode='r') as lt_h5_file:
+        lts = lt_h5_file.root.LinkeTurbidity[latitude_index, longitude_index]
 
     if interp_turbidity:
         linke_turbidity = _interpolate_turbidity(lts, time)

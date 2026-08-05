@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=70.1", "setuptools_scm>=6.2"]
+requires = ["setuptools>=70.1", "setuptools_scm>=6.2", "twine"]
 build-backend = "setuptools.build_meta"
 
 
@@ -16,10 +16,9 @@ dependencies = [
     'pytz',
     'requests',
     'scipy >= 1.7.2',
-    'h5py',
+    'tables',
     'tzdata', # ensure all timezones are available in all installs for consistency GH#2795
 ]
-license = "BSD-3-Clause"
 classifiers = [
     'Development Status :: 4 - Beta',
     'Operating System :: OS Independent',
@@ -78,7 +77,10 @@ test = [
     'pytest-remotedata',
     'packaging',
 ]
-all = ["pvlib[test,optional,doc]"]
+build = [
+    "twine"
+]
+all = ["pvlib[test,optional,doc,build]"]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/pvlib/pvlib-python/issues"
